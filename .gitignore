@@ -1,6 +1,8 @@
-# Dev C++ copy files
+# Dev C++ 	files
 knapsack.149*
 p1a.149*
+*.o
+*.out
 
 # Windows image file caches
 Thumbs.db
