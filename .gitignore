@@ -3,6 +3,10 @@ knapsack.149*
 p1a.149*
 *.o
 *.out
+*.exe
+*.layout
+*.format
+*.win
 
 # Windows image file caches
 Thumbs.db
