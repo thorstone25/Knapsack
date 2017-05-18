@@ -20,38 +20,41 @@ using namespace std;
 
 void exhaustiveKnapsack(knapsack &k, int t);
 knapsack recursiveKnapsack(knapsack &k, int item, clock_t startTime, int t_limit);
+void generateOutput(knapsack &k, string filename);
 
 int main()
 {
-   char x;
    ifstream fin;
    stack <int> moves;
-   string fileName;
+   string filenameext, filename;
    
    // Read the name of the graph from the keyboard or
    // hard code it here for testing.
    
-   // fileName = "knapsack16.input";
+   filenameext = "knapsack1024.input";
 
-   cout << "Enter filename" << endl;
-   cin >> fileName;
+   //cout << "Enter filename" << endl;
+   //cin >> filenameext;
    
-   fin.open(fileName.c_str());
+    filename = filenameext.substr(0, filenameext.find_last_of("."));
+
+   fin.open(filenameext.c_str());
    if (!fin)
    {
-      cerr << "Cannot open " << fileName << endl;
+      cerr << "Cannot open " << filenameext << endl;
       exit(1);
    }
 
    try
    {
-      cout << "Reading knapsack instance" << endl;
+      cout << "Reading knapsack instance: " << filenameext << endl;
       knapsack k(fin);
 
       exhaustiveKnapsack(k, 600);
 
       cout << endl << "Best solution" << endl;
-      k.printSolution();
+      //k.printSolution();
+       generateOutput(k, filename);
       
    }    
 
@@ -70,17 +73,20 @@ int main()
 void exhaustiveKnapsack(knapsack &k, int t)
 {	
 	// get time reference for start
-    clock_t startTime, endTime;
+    clock_t startTime;//, endTime;
 	startTime = clock();
 	
 	// permute over all possible knapsack combinations
 	k = recursiveKnapsack(k, 0, startTime, t);
+    unsigned long diff = clock()-startTime;
+    cout << endl << "Exhaustive Algorithm Total Runtime: " << (float) diff / CLOCKS_PER_SEC << "s" << endl;
 	
 }
 
 knapsack recursiveKnapsack(knapsack &k, int item, clock_t startTime, int t_limit)
 {
-	// if there are no more items to consider, return this knapsack
+	
+    // if there are no more items to consider, return this knapsack
 	if (item >= k.getNumObjects())
 	{
 		return k;
@@ -96,7 +102,7 @@ knapsack recursiveKnapsack(knapsack &k, int item, clock_t startTime, int t_limit
 	knapsack k_without = k_empty;
 	
 	// if time limit is exceeded, return unchanged knapsack
-	int diff = clock()-startTime;
+	unsigned long diff = clock()-startTime;
 	if( (float)t_limit <  (float)diff / CLOCKS_PER_SEC)
 	{	return k_empty; }
 	
@@ -133,4 +139,23 @@ knapsack recursiveKnapsack(knapsack &k, int item, clock_t startTime, int t_limit
 	else
 	{ return k_empty;	}
 	
+}
+
+void generateOutput (knapsack &k, string filename) {
+        ofstream myfile;
+        string filenameext = filename + ".output";
+        myfile.open (filenameext.c_str());
+    
+        myfile << "------------------------------------------------" << endl;
+    
+        myfile << "Total value: " << k.getValue() << endl;
+        myfile << "Total cost: " << k.getCost() << endl << endl;
+    
+        // Print out objects in the solution
+        for (int i = 0; i < k.getNumObjects(); i++)
+            if (k.isSelected(i))
+                myfile << i << "  " << k.getValue(i) << " " << k.getCost(i) << endl;
+    
+        myfile<< endl;
+        myfile.close();
 }
