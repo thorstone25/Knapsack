@@ -1,12 +1,12 @@
 # Dev C++ 	files
-knapsack.149*
-p1a.149*
+*.layout
 *.o
 *.out
 *.exe
-*.layout
 *.format
 *.win
+knapsack.149*
+p1a.149*
 
 # Windows image file caches
 Thumbs.db

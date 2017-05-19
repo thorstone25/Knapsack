@@ -7,13 +7,21 @@ This project required us to implement exhaustive algorithms (with a time limit) 
 
 For the Knapsack problem the first few input files ran under our given time limit of 10 minutes and the exhaustive algorithm was able to check every possibility and return the optimal solution. The algorithm run times were as follows:
 
-knapsack8.input: 0.003628sec
-knapsack12.input: 0.048385sec
-knapsack16.input: 0.865756sec
-knapsack20.input: 15.0829sec
+knapsack8.input: 0.003628 sec
+knapsack12.input: 0.048385 sec
+knapsack16.input: 0.865756 sec
+knapsack20.input: 15.0829 sec
+knapsack24.input: > 10 min
+
+The remaining input files all exceeded the given time limit and the best, albeit non-optimal solution that was found within 10 minutes was returned for each of these cases.
+This is consistent with our expectations since each file takes an order of magnitude larger in processing time for a small growth in n. A naive estimate of the time complexity would be O(2^n) since two choices are checked for each of n objects.
+
+Similarly, for the Graph Coloring problem the time necessary to compute an answer for large cases is prohibitive. In this case, even for small problems, the computation required is prohibitive. The algorithm run times were as follows:
+color12-3.input: 48.958 sec
+color12-4.input: 
+color24-4.input: > 10 min 
 
 The remaining input files all exceeded the given time limit and the best solution found within 10 minutes was returned for each of these cases.
-
-Similarly, for the Graph Coloring problem _____.
+This large growth with problem size is again consistent with our expectations for an exhaustive algorithm. 
 
 In summary, although it is not very efficient, the exhaustive algorithm is suitable for retuning the optimal solution when working with a small number of items. As n gets larger, the runtime to find an optimal solution increases drastically, thus a time limit is required to abort the program. In this case the current best solution is returned and this may be good enough depending on the requirements of the application.
