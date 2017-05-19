@@ -3,7 +3,7 @@ Project #1 Results
 Thurston Brevett
 Pooja Jhaveri
 
-This project required us to implement exhaustive algorithms (with a time limit) to find solutions for the Knapsack and Graph coloring optimization problems.
+This project required the implementation of exhaustive algorithms (with a time limit) to find solutions for the Knapsack and Graph coloring optimization problems.
 
 For the Knapsack problem the first few input files ran under our given time limit of 10 minutes and the exhaustive algorithm was able to check every possibility and return the optimal solution. The algorithm run times were as follows:
 
@@ -13,12 +13,11 @@ knapsack16.input: 0.865756 sec
 knapsack20.input: 15.0829 sec
 knapsack24.input: > 10 min
 
-The remaining input files all exceeded the given time limit and the best, albeit non-optimal solution that was found within 10 minutes was returned for each of these cases.
-This is consistent with our expectations since each file takes an order of magnitude larger in processing time for a small growth in n. A naive estimate of the time complexity would be O(2^n) since two choices are checked for each of n objects. The exponential nature of the algorithm makes it prohibitive for large problems.
+The remaining input files all exceeded the given time limit and the best, albeit non-optimal solution that was found within 10 minutes was returned for each of these cases. This is consistent with our expectations since each file takes an order of magnitude larger in processing time for a small growth in n. A naive estimate of the time complexity would be O(2^n) since two choices are checked for each of n objects. The exponential nature of the algorithm makes it prohibitive for large problems.
 
-Similarly, for the Graph Coloring problem the time necessary to compute an answer for large cases is prohibitive. In this case, even for small problems, the computation required is prohibitive. The algorithm run times were as follows:
-color12-3.input: 48.958 sec
-color12-4.input: 
+Similarly, for the Graph Coloring problem the time necessary to compute an answer for large cases is exponential. In this case, even for small problems, the computation required is prohibitive. The algorithm run times were as follows:
+color12-3.input: 3.82438 sec
+color12-4.input: 116.408 sec
 color24-4.input: > 10 min 
 
 The remaining input files all exceeded the given time limit and the best solution found within 10 minutes was returned for each of these cases.
