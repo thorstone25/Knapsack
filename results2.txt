@@ -1,0 +1,16 @@
+Project #2 Results
+Due: 5/26/17
+Thurston Brevett
+Pooja Jhaveri
+
+This project required the implementation of greedy algorithms to find solutions for the Knapsack and Graph coloring optimization problems.
+
+The greedy algorithm for the Knapsack problem required ordering the given set of items in decreasing value per cost (density). Checked in order of density, if the cost of an item was less than the difference between the cost limit and current total cost of the knapsack, that item could be selected. The entire list of objects was checked in this manner and the best knapsack was returned.
+
+For the Graph coloring problem, the greedy algorithm involved ordering the nodes in a given graph by decreasing degree (number of adjacent nodes). Then, starting with a node of highest degree the algorithm ______
+
+In each case traversing through the ordered list was done in linear O(n) time. The ordering functions ran in O(n^2) time which is slightly more time consuming but still polynomial-time.
+
+Regardless, run times were less than 4ms for Knapsack and under _____ for Graph coloring: significantly lower than runtimes for exhaustive search. In addition, the greedy algorithms were also able to find more optimal solutions for large n; Knapsack solutions had higher total values and Graph coloring solutions had less conflicts compared to their respective exhaustive search solutions.
+
+In summary, the greedy algorithms developed for these problems ran significantly quicker and better than the exhaustive algorithms employed in Project 1. 

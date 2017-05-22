@@ -1,4 +1,4 @@
-// Project 1a: Solving knapsack using exhaustive search
+// Project 2a: Solving knapsack using a greedy algorithm
 //
 
 #include <iostream>
