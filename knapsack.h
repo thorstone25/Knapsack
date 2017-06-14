@@ -18,6 +18,8 @@ public:
     void unSelect(int);
     void deSelect(int);
     bool isSelected(int) const;
+    bool isUnselected(int) const;
+    bool isDeselected(int) const;
     void orderByDensity();
     int bound();
 	bool complete();
@@ -240,7 +242,25 @@ bool knapsack::isSelected(int i) const
     if (i < 0 || i >= getNumObjects())
         throw rangeError("Bad value in knapsack::getValue");
     
-    return selected[i];
+    return selected[i] == 1;
+}
+
+bool knapsack::isUnselected(int i) const
+// Return true if object i is currently selected, and false otherwise.
+{
+    if (i < 0 || i >= getNumObjects())
+        throw rangeError("Bad value in knapsack::getValue");
+    
+    return selected[i] == 0;
+}
+
+bool knapsack::isDeselected(int i) const
+// Return true if object i is currently selected, and false otherwise.
+{
+    if (i < 0 || i >= getNumObjects())
+        throw rangeError("Bad value in knapsack::getValue");
+    
+    return selected[i] == -1;
 }
 
 void knapsack::orderByDensity ()
