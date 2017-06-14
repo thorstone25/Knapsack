@@ -90,7 +90,9 @@ knapsack::knapsack(const knapsack &k)
         density[i] = k.getDensity(i);
         if (k.isSelected(i))
             select(i);
-        else
+        else if (k.isUnselected(i))
+            unSelect(i);
+        else if (k.isDeselected(i))
             deSelect(i);
     }
 }
@@ -348,5 +350,5 @@ bool knapsack::fathomed(int championValue) // returns whether the knapsack is fa
     // 2. the total cost is worse than the current champion value
     // 3. ?
     
-    return (!isLegal() || (getValue() <= championValue));
+    return (!isLegal() || (getValue() < championValue));
 }
