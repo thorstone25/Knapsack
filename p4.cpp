@@ -18,7 +18,7 @@ using namespace std;
 // #include "graph.h"
 #include "knapsack.h"
 
-void branchAndBoundKnapsack(knapsack &k, int item, clock_t startTime, int t);
+knapsack branchAndBoundKnapsack(knapsack &k, clock_t startTime, int t_limit);
 void greedyKnapsack(knapsack &k);
 void exhaustiveKnapsack(knapsack &k, int t);
 knapsack recursiveKnapsack(knapsack &k, int item, clock_t startTime, int t_limit);
@@ -50,13 +50,11 @@ int RunAlgorithm(string filenameext)
         cout << "Reading knapsack instance: " << filenameext << endl;
         knapsack k(fin);
         
-        //exhaustiveKnapsack(k, 600);
-        //k.printSolution();
-        
         // get time reference for start
-        clock_t startTime;//, endTime;
+        clock_t startTime;
         startTime = clock();
-        branchAndBoundKnapsack(k, 0, startTime, 600);
+        knapsack solution = branchAndBoundKnapsack(k, startTime, 600);
+        solution.printSolution();
         unsigned long diff = clock()-startTime;
         float runTime = (float) diff / CLOCKS_PER_SEC;
         cout << endl << "Branch and Bound Algorithm Total Runtime: " << runTime << "s" << endl;
@@ -78,6 +76,7 @@ int RunAlgorithm(string filenameext)
 int main()
 {
     RunAlgorithm("knapsack8.input");
+    return 0;
     RunAlgorithm("knapsack12.input");
     RunAlgorithm("knapsack16.input");
     RunAlgorithm("knapsack20.input");
@@ -89,10 +88,10 @@ int main()
     RunAlgorithm("knapsack256.input");
     RunAlgorithm("knapsack512.input");
     RunAlgorithm("knapsack1024.input");
-    return 0;
+    
 }
 
-void branchAndBoundKnapsack(knapsack &k, int item, clock_t startTime, int t) {
+knapsack branchAndBoundKnapsack(knapsack &k, clock_t startTime, int t_limit) {
     
     /*Your solution should maintain
     a list, possibly implemented as a deque, of partial solutions to a knapsack instance. Each
@@ -100,7 +99,66 @@ void branchAndBoundKnapsack(knapsack &k, int item, clock_t startTime, int t) {
     up to 10 minutes per instance*/
     
     
+    // Initializes the champion knapsack object with all items deselected
+    knapsack champion = knapsack(k);
+    for (int i = 0; i < champion.getNumObjects(); i++) {
+        champion.deSelect(i);
+    }
     
+    // Create a deque containing integers
+    deque<knapsack> subKnapsacks;
+    
+    // Push the knapsack with all items unselected
+    knapsack blank = knapsack(k);
+    for (int i = 0; i < blank.getNumObjects(); i++) {
+        blank.unSelect(i);
+    }
+    subKnapsacks.push_back(blank);
+    
+    while (!subKnapsacks.empty()) {
+        
+        // if time limit is exceeded, return current champion
+        unsigned long diff = clock()-startTime;
+        if( (float)t_limit <  (float)diff / CLOCKS_PER_SEC) {
+            return champion;
+        }
+        
+        // Gets the last item in the deque and removes it
+        knapsack current = subKnapsacks.back();
+        subKnapsacks.pop_back();
+        // If the current knapsack is complete and feasible (legal),
+        // check it against the champion
+        if (current.complete() && current.isLegal()) {
+            if (current.getValue() > champion.getValue()) {
+                champion = current;
+            }
+        }
+        // Else if the current knapsack is incomplete and not fathomed
+        // then push two copies of current onto the deque; one with the
+        // next unselected item selected and one with is deselected
+        else if (!current.complete() && !current.fathomed(champion.getValue())) {
+            
+            int i;
+            for (i = 0; i < current.getNumObjects(); i++) {
+                // Find the first unselected object
+                // Need to create isUnselected in knapsack.h
+                if (current.isUnselected(i)) { break; }
+            }
+            
+            // Make copies of current
+            knapsack selectNext = knapsack(current);
+            knapsack deselectNext = knapsack(current);
+            
+            // Select/deselect object i from each
+            selectNext.select(i);
+            deselectNext.deSelect(i);
+            
+            subKnapsacks.push_back(selectNext);
+            subKnapsacks.push_back(deselectNext);
+
+        }
+    }
+    return champion;
 
 }
 
