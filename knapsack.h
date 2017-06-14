@@ -20,6 +20,8 @@ public:
     bool isSelected(int) const;
     void orderByDensity();
     int bound();
+	bool complete();
+	bool isLegal();
     
 private:
     int numObjects;
@@ -303,3 +305,22 @@ int knapsack::bound()
 	return value_accumulated;
 }
 
+bool knapsack::complete() // returns whether the knapsack is a complete solution
+{
+	for(int i = 0; i < numObjects; i++)
+	{
+		if(!selected[i])
+			return false;
+	}
+	return true;
+}
+
+bool knapsack::isLegal() // returns whether the knapsack is a legal solution
+{
+	return totalCost < costLimit;
+}
+
+bool knapsack::fathomed() // returns whether the knapsack is fathomed
+{
+	return 
+}
