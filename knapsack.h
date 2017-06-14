@@ -23,7 +23,8 @@ public:
     void orderByDensity();
     int bound();
 	bool complete();
-	bool isLegal();
+    bool isLegal();
+    bool fathomed(int);
     
 private:
     int numObjects;
@@ -340,7 +341,12 @@ bool knapsack::isLegal() // returns whether the knapsack is a legal solution
 	return totalCost < costLimit;
 }
 
-bool knapsack::fathomed() // returns whether the knapsack is fathomed
+bool knapsack::fathomed(int championValue) // returns whether the knapsack is fathomed
 {
-	return 
+    // A subproblem is fathomed under any of the following conditions:
+    // 1. the solution is infeasible (cost exceeds limit)
+    // 2. the total cost is worse than the current champion value
+    // 3. ?
+    
+    return (!isLegal() || (getValue() <= championValue));
 }
