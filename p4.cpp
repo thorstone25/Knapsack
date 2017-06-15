@@ -54,11 +54,11 @@ int RunAlgorithm(string filenameext)
         clock_t startTime;
         startTime = clock();
         knapsack solution = branchAndBoundKnapsack(k, startTime, 600);
-        solution.printSolution();
+        //solution.printSolution();
         unsigned long diff = clock()-startTime;
         float runTime = (float) diff / CLOCKS_PER_SEC;
         cout << endl << "Branch and Bound Algorithm Total Runtime: " << runTime << "s" << endl;
-        generateOutput(k, filename, runTime);
+        generateOutput(solution, filename, runTime);
 
         return 0;
     }
@@ -76,7 +76,6 @@ int RunAlgorithm(string filenameext)
 int main()
 {
     RunAlgorithm("knapsack8.input");
-    return 0;
     RunAlgorithm("knapsack12.input");
     RunAlgorithm("knapsack16.input");
     RunAlgorithm("knapsack20.input");
@@ -88,7 +87,8 @@ int main()
     RunAlgorithm("knapsack256.input");
     RunAlgorithm("knapsack512.input");
     RunAlgorithm("knapsack1024.input");
-    
+    return 0;
+
 }
 
 knapsack branchAndBoundKnapsack(knapsack &k, clock_t startTime, int t_limit) {
@@ -114,6 +114,7 @@ knapsack branchAndBoundKnapsack(knapsack &k, clock_t startTime, int t_limit) {
         blank.unSelect(i);
     }
     subKnapsacks.push_back(blank);
+
     
     while (!subKnapsacks.empty()) {
         
@@ -125,6 +126,7 @@ knapsack branchAndBoundKnapsack(knapsack &k, clock_t startTime, int t_limit) {
         
         // Gets the last item in the deque and removes it
         knapsack current = subKnapsacks.back();
+
         subKnapsacks.pop_back();
         // If the current knapsack is complete and feasible (legal),
         // check it against the champion
@@ -139,10 +141,13 @@ knapsack branchAndBoundKnapsack(knapsack &k, clock_t startTime, int t_limit) {
         else if (!current.complete() && !current.fathomed(champion.getValue())) {
             
             int i;
+            int index = 0;
             for (i = 0; i < current.getNumObjects(); i++) {
                 // Find the first unselected object
                 // Need to create isUnselected in knapsack.h
-                if (current.isUnselected(i)) { break; }
+                if (current.isUnselected(i)) {
+                    index = i;
+                }
             }
             
             // Make copies of current
@@ -150,11 +155,11 @@ knapsack branchAndBoundKnapsack(knapsack &k, clock_t startTime, int t_limit) {
             knapsack deselectNext = knapsack(current);
             
             // Select/deselect object i from each
-            selectNext.select(i);
-            deselectNext.deSelect(i);
+            selectNext.select(index);
+            deselectNext.deSelect(index);
             
-            subKnapsacks.push_back(selectNext);
             subKnapsacks.push_back(deselectNext);
+            subKnapsacks.push_back(selectNext);
 
         }
     }
@@ -250,7 +255,7 @@ knapsack recursiveKnapsack(knapsack &k, int item, clock_t startTime, int t_limit
 
 void generateOutput (knapsack &k, string filename, float runtime) {
     ofstream myfile;
-    string filenameext = filename + ".output";
+    string filenameext = filename + ".txt";
     myfile.open (filenameext.c_str());
     
     myfile << "------------------------------------------------" << endl;

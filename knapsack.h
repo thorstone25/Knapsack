@@ -14,6 +14,7 @@ public:
     int getNumObjects() const;
     int getCostLimit() const;
     void printSolution();
+    void printSelections();
     void select(int);
     void unSelect(int);
     void deSelect(int);
@@ -58,7 +59,7 @@ knapsack::knapsack(ifstream &fin)
         fin >> j >> v >> c;
         value[j] = v;
         cost[j] = c;
-        density[j] = v/c;
+        density[j] = (float)v/(float)c;
         deSelect(j);
     }
     
@@ -188,6 +189,22 @@ void knapsack::printSolution()
     cout << endl;
 }
 
+void knapsack::printSelections()
+// Prints out the solution.
+{
+    cout << "------------------------------------------------" << endl;
+    
+    cout << "Total value: " << getValue() << endl;
+    cout << "Total cost: " << getCost() << endl << endl;
+    
+    // Print out objects in the solution
+    for (int i = 0; i < getNumObjects(); i++)
+            cout << i << "  " << getValue(i) << " " << getCost(i) << " " << density[i] << " " << selected[i] << endl;
+    
+    
+    cout << endl;
+}
+
 ostream &operator<<(ostream &ostr, vector<bool> v)
 // Overloaded output operator for vectors.
 {
@@ -269,28 +286,32 @@ bool knapsack::isDeselected(int i) const
 void knapsack::orderByDensity ()
 //orders the items in this knapsack by highest density (value per cost)
 {
-    int temp = 0;
-    for (int i = 0; i < numObjects - 1; i++)
+    float temp_density = 0;
+    int temp_value = 0;
+    int temp_cost = 0;
+    
+    for (int i = 0; i < numObjects; i++)
     {
-        for (int j = 0; j < numObjects - i - 1; j++)
+        for (int j = 0; j < numObjects - i; j++)
         {
-            if (density[j] > density[j-1]) {
-                temp = density[j];
-                density[j] = density[j-1];
-                density[j-1] = temp;
-                temp = value[j];
-                value[j] = value[j-1];
-                value[j-1] = temp;
-                temp = cost[j];
-                cost[j] = cost[j-1];
-                cost[j-1] = temp;
+            if (density[j+1] > density[j])
+            {
+                temp_density = density[j+1];
+                density[j+1] = density[j];
+                density[j] = temp_density;
+                temp_value = value[j+1];
+                value[j+1] = value[j];
+                value[j] = temp_value;
+                temp_cost = cost[j+1];
+                cost[j+1] = cost[j];
+                cost[j] = temp_cost;
             }
         }
     }
 }
 
 int knapsack::bound()
-// returns an upper bound on teh value of objects by solving fractional knapsack
+// returns an upper bound on the value of objects by solving fractional knapsack
 {
 	// get constraints and value of the bag
 	int cost_remaining = costLimit;
@@ -309,7 +330,7 @@ int knapsack::bound()
 	
 	// add unselected items in order of density to the bag until it overflows
 	i = 0;
-	while((cost_remaining > 0) && (i < numObjects))
+	while((cost_remaining - cost[i] > 0) && (i < numObjects))
 	{
 		// if the bag is not full or overflowing, add the unselected item
 		if(selected[i] == 0)
@@ -320,10 +341,10 @@ int knapsack::bound()
 		i++;
 	}
 	
-	// remove excess objects
-	i--;
-	value_accumulated += cost_remaining * density[i]; // cost_remaining is negative, i is the last object added
-	
+	// add fractional object
+	value_accumulated += cost_remaining * density[i]; // cost_remaining is negative,
+    cost_remaining -= cost_remaining; // cost remaining should be 0
+    
 	// return the fractional knapsack result
 	return value_accumulated;
 }
@@ -350,5 +371,5 @@ bool knapsack::fathomed(int championValue) // returns whether the knapsack is fa
     // 2. the total cost is worse than the current champion value
     // 3. ?
     
-    return (!isLegal() || (getValue() < championValue));
+    return (!isLegal() || (bound() < championValue));
 }
