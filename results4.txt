@@ -1,0 +1,17 @@
+Project #4 Results
+Due: 6/15/17
+Thurston Brevett
+Pooja Jhaveri
+
+This project required writing a branch and bound implementation to find solutions for the Knapsack optimization problem.
+
+Branching method: the knapsack is first ordered by density. at each case, consider each unconsidered item and select or deselect it. Add these suburbs to deck
+
+Bounding: fractional knapsack, take everything already selected, take everything not considered and add until full (take fraction of last object)
+
+Fathoming method: 3 cases: its a complete solution (all selected or deselected), an illegal solution (over the cost bound), or if the bound is worse than the current champion. pop off deck and don’t create subproblems
+
+compare to other projects
+
+
+In summary, the branch and bound algorithms developed for these problems ran significantly quicker than and produced more optimal results than the greedy and exhaustive algorithms used in the previous projects given the runtime limitations.
