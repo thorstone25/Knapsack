@@ -126,9 +126,9 @@ knapsack branchAndBoundKnapsack(knapsack &k, clock_t startTime, int t_limit) {
         
         // Gets the last item in the deque and removes it
         knapsack current = subKnapsacks.back();
-
-        subKnapsacks.pop_back();
-        // If the current knapsack is complete and feasible (legal),
+		subKnapsacks.pop_back();
+        
+		// If the current knapsack is complete and feasible (legal),
         // check it against the champion
         if (current.complete() && current.isLegal()) {
             if (current.getValue() > champion.getValue()) {
@@ -147,6 +147,7 @@ knapsack branchAndBoundKnapsack(knapsack &k, clock_t startTime, int t_limit) {
                 // Need to create isUnselected in knapsack.h
                 if (current.isUnselected(i)) {
                     index = i;
+					break;
                 }
             }
             

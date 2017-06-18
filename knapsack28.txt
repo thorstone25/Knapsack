@@ -22,4 +22,4 @@ Total cost: 7383
 21  876 776
 23  974 874
 
-Time to completion: 0.046662 seconds.
+Time to completion: 1.851 seconds.

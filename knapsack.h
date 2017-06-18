@@ -290,9 +290,9 @@ void knapsack::orderByDensity ()
     int temp_value = 0;
     int temp_cost = 0;
     
-    for (int i = 0; i < numObjects; i++)
+    for (int i = 0; i < numObjects - 1; i++)
     {
-        for (int j = 0; j < numObjects - i; j++)
+        for (int j = 0; j < numObjects - i - 1; j++)
         {
             if (density[j+1] > density[j])
             {
@@ -330,7 +330,7 @@ int knapsack::bound()
 	
 	// add unselected items in order of density to the bag until it overflows
 	i = 0;
-	while((cost_remaining - cost[i] > 0) && (i < numObjects))
+	while((i < numObjects) && (cost_remaining - cost[i] > 0))
 	{
 		// if the bag is not full or overflowing, add the unselected item
 		if(selected[i] == 0)
@@ -341,7 +341,9 @@ int knapsack::bound()
 		i++;
 	}
 	
+	
 	// add fractional object
+	i = ((i > 0) ? --i : 0);
 	value_accumulated += cost_remaining * density[i]; // cost_remaining is negative,
     cost_remaining -= cost_remaining; // cost remaining should be 0
     
