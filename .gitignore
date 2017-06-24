@@ -8,6 +8,18 @@
 knapsack.149*
 p1a.149*
 
+#Visual Basic Files
+*.tlog
+*.log
+*.pdb
+*.ilk
+*.suo
+*.obj
+*.sln
+*.vcxproj
+*.idb
+
+
 # Windows image file caches
 Thumbs.db
 ehthumbs.db

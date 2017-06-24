@@ -14,10 +14,18 @@ public:
     int getNumObjects() const;
     int getCostLimit() const;
     void printSolution();
+    void printSelections();
     void select(int);
     void unSelect(int);
+    void deSelect(int);
     bool isSelected(int) const;
+    bool isUnselected(int) const;
+    bool isDeselected(int) const;
     void orderByDensity();
+    int bound();
+	bool complete();
+    bool isLegal();
+    bool fathomed(int);
     
 private:
     int numObjects;
@@ -25,7 +33,7 @@ private:
     vector<int> value;
     vector<int> cost;
     vector<float> density; // vector to keep track of value per cost density
-    vector<bool> selected;
+    vector<short int> selected;
     int totalValue;
     int totalCost;
 };
@@ -51,12 +59,14 @@ knapsack::knapsack(ifstream &fin)
         fin >> j >> v >> c;
         value[j] = v;
         cost[j] = c;
-        density[j] = v/c;
-        unSelect(j);
+        density[j] = (float)v/(float)c;
+        deSelect(j);
     }
     
     totalValue = 0;
     totalCost = 0;
+    
+    orderByDensity();
 }
 
 knapsack::knapsack(const knapsack &k)
@@ -81,8 +91,10 @@ knapsack::knapsack(const knapsack &k)
         density[i] = k.getDensity(i);
         if (k.isSelected(i))
             select(i);
-        else
+        else if (k.isUnselected(i))
             unSelect(i);
+        else if (k.isDeselected(i))
+            deSelect(i);
     }
 }
 
@@ -177,6 +189,22 @@ void knapsack::printSolution()
     cout << endl;
 }
 
+void knapsack::printSelections()
+// Prints out the solution.
+{
+    cout << "------------------------------------------------" << endl;
+    
+    cout << "Total value: " << getValue() << endl;
+    cout << "Total cost: " << getCost() << endl << endl;
+    
+    // Print out objects in the solution
+    for (int i = 0; i < getNumObjects(); i++)
+            cout << i << "  " << getValue(i) << " " << getCost(i) << " " << density[i] << " " << selected[i] << endl;
+    
+    
+    cout << endl;
+}
+
 ostream &operator<<(ostream &ostr, vector<bool> v)
 // Overloaded output operator for vectors.
 {
@@ -192,12 +220,26 @@ void knapsack::select(int i)
     if (i < 0 || i >= getNumObjects())
         throw rangeError("Bad value in knapsack::Select");
     
-    if (selected[i] == false)
+    if (selected[i] < 1)
     {
-        selected[i] = true;
+        selected[i] = 1;
         totalCost = totalCost + getCost(i);
         totalValue = totalValue + getValue(i);
     }
+}
+
+void knapsack::deSelect(int i)
+// deSelect object i.
+{
+    if (i < 0 || i >= getNumObjects())
+        throw rangeError("Bad value in knapsack::unSelect");
+    
+    if (selected[i] == 1)
+    {
+        totalCost = totalCost - getCost(i);
+        totalValue = totalValue - getValue(i);
+    }
+    selected[i] = -1;
 }
 
 void knapsack::unSelect(int i)
@@ -206,12 +248,12 @@ void knapsack::unSelect(int i)
     if (i < 0 || i >= getNumObjects())
         throw rangeError("Bad value in knapsack::unSelect");
     
-    if (selected[i] == true)
+    if (selected[i] == 1)
     {
-        selected[i] = false;
         totalCost = totalCost - getCost(i);
         totalValue = totalValue - getValue(i);
     }
+    selected[i] = 0;
 }
 
 bool knapsack::isSelected(int i) const
@@ -220,29 +262,116 @@ bool knapsack::isSelected(int i) const
     if (i < 0 || i >= getNumObjects())
         throw rangeError("Bad value in knapsack::getValue");
     
-    return selected[i];
+    return selected[i] == 1;
+}
+
+bool knapsack::isUnselected(int i) const
+// Return true if object i is currently selected, and false otherwise.
+{
+    if (i < 0 || i >= getNumObjects())
+        throw rangeError("Bad value in knapsack::getValue");
+    
+    return selected[i] == 0;
+}
+
+bool knapsack::isDeselected(int i) const
+// Return true if object i is currently selected, and false otherwise.
+{
+    if (i < 0 || i >= getNumObjects())
+        throw rangeError("Bad value in knapsack::getValue");
+    
+    return selected[i] == -1;
 }
 
 void knapsack::orderByDensity ()
 //orders the items in this knapsack by highest density (value per cost)
 {
-    int temp = 0;
+    float temp_density = 0;
+    int temp_value = 0;
+    int temp_cost = 0;
+    
     for (int i = 0; i < numObjects - 1; i++)
     {
         for (int j = 0; j < numObjects - i - 1; j++)
         {
-            if (density[j] > density[j-1]) {
-                temp = density[j];
-                density[j] = density[j-1];
-                density[j-1] = temp;
-                temp = value[j];
-                value[j] = value[j-1];
-                value[j-1] = temp;
-                temp = cost[j];
-                cost[j] = cost[j-1];
-                cost[j-1] = temp;
+            if (density[j+1] > density[j])
+            {
+                temp_density = density[j+1];
+                density[j+1] = density[j];
+                density[j] = temp_density;
+                temp_value = value[j+1];
+                value[j+1] = value[j];
+                value[j] = temp_value;
+                temp_cost = cost[j+1];
+                cost[j+1] = cost[j];
+                cost[j] = temp_cost;
             }
         }
     }
 }
 
+int knapsack::bound()
+// returns an upper bound on the value of objects by solving fractional knapsack
+{
+	// get constraints and value of the bag
+	int cost_remaining = costLimit;
+	int value_accumulated = 0;
+	int i = 0; // indexer
+	
+	// add all selected items to the bag
+	for(i = 0; i < numObjects; i++)
+	{
+		if(selected[i] == 1)
+		{
+			cost_remaining -= cost[i];
+			value_accumulated += value[i];
+		}
+	}
+	
+	// add unselected items in order of density to the bag until it overflows
+	i = 0;
+	while((i < numObjects) && (cost_remaining - cost[i] > 0))
+	{
+		// if the bag is not full or overflowing, add the unselected item
+		if(selected[i] == 0)
+		{
+			cost_remaining -= cost[i];
+			value_accumulated += value[i];
+		}
+		i++;
+	}
+	
+	
+	// add fractional object
+	i = ((i > 0) ? --i : 0);
+	value_accumulated += cost_remaining * density[i]; // cost_remaining is negative,
+    cost_remaining -= cost_remaining; // cost remaining should be 0
+    
+	// return the fractional knapsack result
+	return value_accumulated;
+}
+
+bool knapsack::complete() // returns whether the knapsack is a complete solution
+{
+	for(int i = 0; i < numObjects; i++)
+	{
+		if(!selected[i])
+			return false;
+	}
+	return true;
+}
+
+bool knapsack::isLegal() // returns whether the knapsack is a legal solution
+{
+	return totalCost < costLimit;
+}
+
+bool knapsack::fathomed(int championValue) // returns whether the knapsack is fathomed
+{
+    // A subproblem is fathomed under any of the following conditions:
+    // 1. the solution is infeasible (cost exceeds limit)
+    // 2. the total cost is worse than the current champion value
+    // 3. ?
+    
+    return (!isLegal() || (bound() < championValue));
+}

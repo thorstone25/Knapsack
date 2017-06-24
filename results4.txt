@@ -1,0 +1,16 @@
+﻿Project #4 Results
+Due: 6/15/17
+Thurston Brevett
+Pooja Jhaveri
+
+This project required writing a branch and bound implementation to find solutions for the Knapsack optimization problem. This was done by defining and implementing a branching method, bounding method, and fathoming method.
+
+Branching method: the knapsack was first ordered by density. Then, for each object, we consider each unconsidered item and select or deselect it to branch. Since our heuristic indicates that the near optimal solution will tend to have the densest items selected, we always consider the branch with the object selected before the branch with the object deselected, and we branch going from the densest item to the least dense item. In this way, the denser portion of the tree is always explored before the less dense portion, so that the less dense portion is more likely to be fathomed. This was implemented by adding all non-fathomed sub-problems to the deque in the order described above, and then processing each sub-problem in the deque.
+
+Bounding method: the bound of an incomplete knapsack, i.e. a knapsack where not all items have been considered, was achieved by solving fractional knapsack. This was computed by adding the value of the items already selected, then adding the value of unconsidered items in order of density until the knapsack was overflowing, and then removing the overflowing fraction of the knapsack from the graph. This is conceptually equivalent to adding only the portion of the final item that fit inside of the bag.
+
+Fathoming method: the fathoming of the tree occurred in 3 cases: the branch was fathomed if a complete solution occurred, (meaning that all items were considered i.e. selected or deselected), an illegal solution occurred (i.e. the cost of selected items exceeded the limit), or the bound was worse than the current champion. In these cases, the node was popped off of the deck without creating additional sub-problems, effectively fathoming the node in concert with our branching method.
+
+This algorithm ran very fast, and solved the instances with an optimal solution in comparable time with the CPLEX solver. Due to our branching strategy which incorporated our knowledge of where the optimal solution was, we were able to target the optimal solution in order to maximize fathoming. It is unclear how CPLEX decides to approach attempting to bound problems, and therefore, it is likely that CPLEX did not take advantage of heuristics of the problem domain in order to maximize the fathoming of the tree.
+
+In summary, the branch and bound algorithms developed for these problems ran significantly quicker than and produced more optimal results than the greedy and exhaustive algorithms used in the previous projects given the runtime limitations. In addition, the algorithm was tuned to the problem domain in order to give it advantages over the default CPLEX configuration.
