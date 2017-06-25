@@ -185,4 +185,4 @@ Total cost: 61843
 180  800 700
 181  802 702
 
-Time to completion: 5.225 seconds.
+Time to completion: 0.02 seconds.

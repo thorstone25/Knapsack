@@ -1,6 +1,6 @@
 ------------------------------------------------
-Total value: 4928
-Total cost: 3828
+Total value: 4576
+Total cost: 3476
 
 0  101 1
 1  122 22
@@ -10,8 +10,8 @@ Total cost: 3828
 5  447 347
 6  467 367
 7  586 486
+8  622 522
 9  713 613
 10  790 690
-13  974 874
 
-Time to completion: 15.003 seconds.
+Time to completion: 0 seconds.

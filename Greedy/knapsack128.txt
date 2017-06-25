@@ -94,4 +94,4 @@ Total cost: 31221
 89  809 709
 90  812 712
 
-Time to completion: 0.703 seconds.
+Time to completion: 0.006 seconds.

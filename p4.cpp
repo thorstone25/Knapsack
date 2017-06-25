@@ -1,5 +1,4 @@
-// Project 2a: Solving knapsack using a greedy algorithm
-//
+// Project 5: Solving knapsack using Local Search Algorithms
 
 #include <iostream>
 #include <limits.h>
@@ -7,9 +6,10 @@
 #include <fstream>
 #include <queue>
 #include <stack>
-#include <vector>
 #include <time.h>
 #include <cstdlib>
+#include <algorithm>    // std::sort
+#include <vector>       // std::vector
 
 using namespace std;
 
@@ -19,76 +19,262 @@ using namespace std;
 #include "knapsack.h"
 
 knapsack branchAndBoundKnapsack(knapsack &k, clock_t startTime, int t_limit);
-void greedyKnapsack(knapsack &k);
+knapsack greedyKnapsack(knapsack &k, int index);
 void exhaustiveKnapsack(knapsack &k, int t);
 knapsack recursiveKnapsack(knapsack &k, int item, clock_t startTime, int t_limit);
 void generateOutput(knapsack &k, string filename, float runtime);
+int RunAlgorithm(string filenameext);
+bool timeExpired(int t_limit, clock_t startTime);
+bool updateChampion(knapsack &, knapsack &);
+knapsack bestNeighbor(knapsack &k);
+knapsack bestNeighbor(const knapsack &k, bool type); 
+knapsack steepestDescentKnapsack(knapsack &k, const clock_t startTime, const int t_limit);
+knapsack geneticKnapsack(knapsack &k, const clock_t startTime, const int t_limit);
 
-int RunAlgorithm(string filenameext)
-{
-    ifstream fin;
-    stack <int> moves;
-    string filename;
-    
-    // Read the name of the graph from the keyboard or
-    // hard code it here for testing.
-    
-    //cout << "Enter filename" << endl;
-    //cin >> filenameext;
-    
-    filename = filenameext.substr(0, filenameext.find_last_of("."));
-    
-    fin.open(filenameext.c_str());
-    if (!fin)
-    {
-        cerr << "Cannot open " << filenameext << endl;
-        exit(1);
-    }
-    
-    try
-    {
-        cout << "Reading knapsack instance: " << filenameext << endl;
-        knapsack k(fin);
-        
-        // get time reference for start
-        clock_t startTime;
-        startTime = clock();
-        knapsack solution = branchAndBoundKnapsack(k, startTime, 600);
-        //solution.printSolution();
-        unsigned long diff = clock()-startTime;
-        float runTime = (float) diff / CLOCKS_PER_SEC;
-        cout << endl << "Branch and Bound Algorithm Total Runtime: " << runTime << "s" << endl;
-        generateOutput(solution, filename, runTime);
-
-        return 0;
-    }
-    
-    catch (indexRangeError &ex)
-    {
-        cout << ex.what() << endl; exit(1);
-    }
-    catch (rangeError &ex)
-    {
-        cout << ex.what() << endl; exit(1);
-    }
-}
 
 int main()
 {
-    RunAlgorithm("knapsack8.input");
-    RunAlgorithm("knapsack12.input");
+	RunAlgorithm("knapsack8.input");
+	RunAlgorithm("knapsack12.input");
     RunAlgorithm("knapsack16.input");
     RunAlgorithm("knapsack20.input");
     RunAlgorithm("knapsack28.input");
-    RunAlgorithm("knapsack32.input");
+	/*
+	RunAlgorithm("knapsack32.input");
     RunAlgorithm("knapsack48.input");
     RunAlgorithm("knapsack64.input");
     RunAlgorithm("knapsack128.input");
     RunAlgorithm("knapsack256.input");
     RunAlgorithm("knapsack512.input");
-    RunAlgorithm("knapsack1024.input");
-    return 0;
+	RunAlgorithm("knapsack1024.input");
+    */
+	return 0;
 
+}
+
+
+int RunAlgorithm(string filenameext)
+{
+	ifstream fin;
+	stack <int> moves;
+	string filename;
+
+	// Read the name of the graph from the keyboard or
+	// hard code it here for testing.
+
+	//cout << "Enter filename" << endl;
+	//cin >> filenameext;
+
+	filename = filenameext.substr(0, filenameext.find_last_of("."));
+
+	fin.open(filenameext.c_str());
+	if (!fin)
+	{
+		cerr << "Cannot open " << filenameext << endl;
+		exit(1);
+	}
+
+	try
+	{
+		cout << "Reading knapsack instance: " << filenameext << endl;
+		knapsack k(fin);
+
+		// get time reference for start
+		clock_t startTime = clock();
+
+		// run the algorithm
+		cout << "Optimizing . . ." << endl;
+		knapsack solution = geneticKnapsack(k, startTime, 15);
+
+		// report back to user
+		// solution.printSolution();
+		unsigned long diff = clock() - startTime;
+		float runTime = (float)diff / CLOCKS_PER_SEC;
+		cout << endl << "Genetic Algorithm Total Runtime: " << runTime << "s" << endl << endl << endl;
+		generateOutput(solution, filename, runTime);
+		return 0;
+	}
+
+	catch (indexRangeError &ex)
+	{
+		cout << ex.what() << endl; exit(1);
+	}
+	catch (rangeError &ex)
+	{
+		cout << ex.what() << endl; exit(1);
+	}
+
+}
+
+knapsack geneticKnapsack(knapsack &k, const clock_t startTime, const int t_limit)
+{
+	/* create a population of knapsacks */
+	vector<knapsack> population;
+	knapsack b = k; // champion knapsack
+	int pop_size = k.getNumObjects() / 4;
+	pop_size = (pop_size < 8) ? 8 : pop_size;
+	pop_size = (pop_size > 50) ? 50 : pop_size;
+	float threshold = k.getNumObjects() * 10;
+	int update_count = 0;
+	bool updated = false;
+
+	// randomize each knapsack
+	for (int i = 0; i < pop_size; i++)
+		population.push_back(knapsack(k, 1));
+
+	// sort population by best knapsack
+	sort(population.begin(), population.end()); 
+	reverse(population.begin(), population.end()); // first element is the best
+	// 
+	while ((!timeExpired(t_limit, startTime)) && (k.isLegal()) && (update_count < threshold)) // until time expires or very near the bound
+	{
+		// cross every set of adjacent pairs of knapsacks
+		for (int i = 0; i < pop_size - 1; i++)
+			population.push_back(crossover(population[i], population[i + 1]));
+
+		/* choose survivors */
+		unique(population.begin(), population.end()); // remove copies
+
+		for (int i = 0; i < population.size(); i) // next, remove illegal solutions
+			if (!population[i].isLegal())
+				population.erase(population.begin() + i);
+			else
+				i++;
+
+		sort(population.begin(), population.end()); // sort the population
+		reverse(population.begin(), population.end()); // order with the best at the front
+
+		// then, remove the worst solutions until the population reaches the original size
+		if (population.size() > pop_size / 2)
+			population.erase(population.begin() + pop_size/2 - 1, population.begin() + population.size() - 1);
+
+		// if necessary add new random solutions to maintain the population size
+		if (population.size() < pop_size)
+			for (int i = population.size() - 1; i < pop_size; i++)
+				population.push_back(knapsack(k, 1)); // add random knapsacks
+		
+		// re-sort the new knapsacks (ignores legality)
+		sort(population.begin(), population.end()); // sort the population
+		reverse(population.begin(), population.end()); // order with the best at the front
+
+
+		// update best knapsack so far
+		for (int i = 0; i < population.size(); i++)
+			updated |= updateChampion(k, population[i]);
+		if (updated)
+			update_count = 0;
+		update_count++;
+	}
+	if ((update_count > threshold))
+		cout << "Population fully adapted with value " << k.getValue() << endl;
+	else if (timeExpired(t_limit, startTime))
+		cout << "Time Expired!";
+	return k;
+}
+
+knapsack steepestDescentKnapsack(knapsack &k, const clock_t startTime, const int t_limit)
+{
+	// temporary solution
+	knapsack b = knapsack(k, 1);
+	k.unSelect(); // unselect all objects to ensure the while loop executes
+
+	//	// get an initial solution
+	greedyKnapsack(b, 0);
+	
+	// continue improving the solution until time or at a local minima
+	while (!timeExpired(t_limit, startTime) && !(b == k))
+	{
+		// move to the best neighbor
+		k = b;
+		b = bestNeighbor(k);
+	}
+	// return k after optimization is complete
+	return b;
+}
+
+knapsack bestNeighbor(const knapsack &k, bool type)
+{
+	knapsack b = k, l = k; // best knapsack neighbor so far.
+	for (int i = 0; i < l.getNumObjects(); i++) // for each item
+	{
+		// toggle the item
+		l.toggle(i);
+
+		// greedily fill the rest of the knapsack
+		greedyKnapsack(l, i);
+
+		// update champion
+		updateChampion(b, l);
+
+		// reset the knapsack
+		l = k;
+	}
+	return b;
+}
+
+knapsack bestNeighbor(knapsack &k) // returns the best 1-opt / 2-opt / 3-opt neighbor to the knapsack
+{
+	knapsack b = k; // best knapsack neighbor so far.
+	for (int i = 0; i < k.getNumObjects(); i++) // choose one item to put in
+	{
+		if (k.isSelected(i))
+			continue;
+		for (int j = 0; j < k.getNumObjects(); j++) // choose one item to take out
+		{
+			if (k.isDeselected(j))
+				continue;
+			for (int l = 0; l < k.getNumObjects(); l++) // choose another item to put in
+			{
+
+				if ( (l == i) || k.isSelected(l))
+					continue;
+
+				if (k.getValue(i) + k.getValue(l) > k.getValue(j)) // if swapping items gives a net gain
+				{
+					// select the first item
+					k.toggle(i);
+
+					// if knapsack becomes illegal
+					if (!k.isLegal())
+					{
+						// else deselect the second item to try to make it legal
+						k.toggle(j);
+
+						// if knapsack becomes legal
+						if (k.isLegal())
+						{
+							// deselect the third item to try to make it legal
+							k.toggle(l);
+
+							// update champion
+							updateChampion(b, k);
+
+							// reset knapsack
+							k.toggle(l);
+							k.toggle(j);
+							k.toggle(i);
+						}
+						else
+						{
+							// update champion
+							updateChampion(b, k);
+							// reset knapsack
+							k.toggle(j);
+							k.toggle(i);
+						}
+					}
+					else
+					{
+						// update champion
+						updateChampion(b, k);
+						// reset knapsack
+						k.toggle(i);
+					}
+				}
+			}
+		}
+	}
+	return b;
 }
 
 knapsack branchAndBoundKnapsack(knapsack &k, clock_t startTime, int t_limit) {
@@ -168,18 +354,31 @@ knapsack branchAndBoundKnapsack(knapsack &k, clock_t startTime, int t_limit) {
 
 }
 
-void greedyKnapsack(knapsack &k) {
-    k.orderByDensity();
-    for (int i = 0; i < k.getNumObjects(); i++)
-    {
-        // select the object at index i if both:
-        // 1. the current toal cost of all the selected items is less than the cost limit
-        // 2. adding the current item won't exceed the cost limit
-        if (k.getCost() < k.getCostLimit() && k.getCost(i) < k.getCostLimit() - k.getCost())
-        {
-            k.select(i);
-        }
-    }
+knapsack greedyKnapsack(knapsack &k, int index) 
+{
+	if (index == 0)
+	{
+		k.unSelect(); // unselect all
+
+		// select the object at index i adding the current item won't exceed the cost limit
+		for (int i = 0; i < k.getNumObjects(); i++)
+			if (k.getCost() + k.getCost(i) < k.getCostLimit())
+				k.select(i);
+	}
+	else if (index < k.getNumObjects() && index > 0)
+	{
+		for (int i = index; i < k.getNumObjects(); i++) // deselect all items after index
+			k.deSelect(i);
+
+		for (int i = index; i < k.getNumObjects(); i++) // greedily fill the knapsack
+			if (k.getCost() + k.getCost(i) < k.getCostLimit())
+				k.select(i);
+	}
+	else
+		if (index < 0 || index >= k.getNumObjects())
+			throw rangeError("Bad index in greedyKnapsack");
+	return k;
+
 }
 
 
@@ -257,7 +456,7 @@ knapsack recursiveKnapsack(knapsack &k, int item, clock_t startTime, int t_limit
 void generateOutput (knapsack &k, string filename, float runtime) {
     ofstream myfile;
     string filenameext = filename + ".txt";
-    myfile.open (filenameext.c_str());
+	myfile.open (filenameext.c_str());
     
     myfile << "------------------------------------------------" << endl;
     
@@ -272,4 +471,21 @@ void generateOutput (knapsack &k, string filename, float runtime) {
     myfile<< endl;
     myfile << "Time to completion: " << runtime << " seconds." << endl;
     myfile.close();
+}
+
+bool timeExpired(int t_limit, clock_t startTime)
+{
+	return ((float)t_limit < (float)(clock() - startTime) / CLOCKS_PER_SEC);
+}
+
+
+bool updateChampion(knapsack &b, knapsack &k)
+{
+	if (k.isLegal() && (k > b))
+	{
+		b = k;
+		return true;
+	}
+	else
+		return false;
 }

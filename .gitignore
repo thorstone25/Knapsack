@@ -8,6 +8,11 @@
 knapsack.149*
 p1a.149*
 
+# Visual Studio files
+*.*db
+Debug/*
+Knapsack.vcxproj.user
+
 #Visual Basic Files
 *.tlog
 *.log

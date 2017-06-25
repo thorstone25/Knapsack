@@ -1,11 +1,18 @@
 // Knapsack class
 // Version f08.1
 
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_int_distribution.hpp>
+
+
+boost::random::mt19937 gen;
+
 class knapsack
 {
 public:
     knapsack(ifstream &fin);
     knapsack(const knapsack &);
+	knapsack::knapsack(const knapsack &k, bool random);
     int getCost() const;
     int getValue() const;
     int getCost(int) const;
@@ -17,25 +24,32 @@ public:
     void printSelections();
     void select(int);
     void unSelect(int);
+	void unSelect();
     void deSelect(int);
     bool isSelected(int) const;
     bool isUnselected(int) const;
     bool isDeselected(int) const;
     void orderByDensity();
-    int bound();
+    float bound();
 	bool complete();
     bool isLegal();
     bool fathomed(int);
+	void toggle(int);
+	friend bool operator==(const knapsack &, const knapsack &);
+	friend bool operator<(const knapsack &, const knapsack &);
+	friend bool operator>(const knapsack &, const knapsack &);
+	friend knapsack crossover(const knapsack, const knapsack);
     
 private:
     int numObjects;
     int costLimit;
-    vector<int> value;
+    int totalValue;
+    int totalCost;
+	vector<int> value;
     vector<int> cost;
     vector<float> density; // vector to keep track of value per cost density
     vector<short int> selected;
-    int totalValue;
-    int totalCost;
+
 };
 
 knapsack::knapsack(ifstream &fin)
@@ -60,7 +74,7 @@ knapsack::knapsack(ifstream &fin)
         value[j] = v;
         cost[j] = c;
         density[j] = (float)v/(float)c;
-        deSelect(j);
+        unSelect(j);
     }
     
     totalValue = 0;
@@ -96,6 +110,75 @@ knapsack::knapsack(const knapsack &k)
         else if (k.isDeselected(i))
             deSelect(i);
     }
+	orderByDensity();
+}
+
+knapsack::knapsack(const knapsack &k, bool random)
+// randomized copy of the current knapsack
+{
+	int n = k.getNumObjects();
+
+	value.resize(n);
+	cost.resize(n);
+	density.resize(n);
+	selected.resize(n);
+	
+	numObjects = k.getNumObjects();
+	costLimit = k.getCostLimit();
+
+	totalCost = 0;
+	totalValue = 0;
+
+	if( !random )
+	{
+		for (int i = 0; i < n; i++)
+		{
+			value[i] = k.getValue(i);
+			cost[i] = k.getCost(i);
+			density[i] = k.getDensity(i);
+			if (k.isSelected(i))
+				select(i);
+			else if (k.isUnselected(i))
+				unSelect(i);
+			else if (k.isDeselected(i))
+				deSelect(i);
+		}
+	}
+	else
+	{
+		// get a modulus value used for masking versus a random number
+		unsigned int modval = 0;
+		unsigned int randval = 0;
+
+		// for all items
+		for (int i = 0; i < k.numObjects; i++)
+		{
+			// copy item values
+			value[i] = k.getValue(i);
+			cost[i] = k.getCost(i);
+			density[i] = k.getDensity(i);
+
+			// if all bits used, get 32 new random bits and reset modulus
+			if (modval == 0)
+			{
+				// get a random integer
+				boost::random::uniform_int_distribution<> dist(0, 256*256 - 1);
+				randval = dist(gen);
+
+				// reset modulus bit
+				modval = 1;
+			}
+
+			// choose selection or deselection
+			if ((randval & modval) > 0)
+				select(i);
+			else
+				deSelect(i);
+			
+			// update modulos value
+			modval <<= 1;
+		}
+	}
 }
 
 int knapsack::getNumObjects() const
@@ -232,7 +315,7 @@ void knapsack::deSelect(int i)
 // deSelect object i.
 {
     if (i < 0 || i >= getNumObjects())
-        throw rangeError("Bad value in knapsack::unSelect");
+        throw rangeError("Bad value in knapsack::deSelect");
     
     if (selected[i] == 1)
     {
@@ -256,11 +339,25 @@ void knapsack::unSelect(int i)
     selected[i] = 0;
 }
 
+void knapsack::unSelect()
+// unSelect all objects.
+{
+	for (int i = 0; i < numObjects; i++)
+	{
+		if (selected[i] == 1)
+		{
+			totalCost = totalCost - getCost(i);
+			totalValue = totalValue - getValue(i);
+		}
+		selected[i] = 0;
+	}
+}
+
 bool knapsack::isSelected(int i) const
 // Return true if object i is currently selected, and false otherwise.
 {
     if (i < 0 || i >= getNumObjects())
-        throw rangeError("Bad value in knapsack::getValue");
+        throw rangeError("Bad value in knapsack::isSelected");
     
     return selected[i] == 1;
 }
@@ -269,7 +366,7 @@ bool knapsack::isUnselected(int i) const
 // Return true if object i is currently selected, and false otherwise.
 {
     if (i < 0 || i >= getNumObjects())
-        throw rangeError("Bad value in knapsack::getValue");
+        throw rangeError("Bad value in knapsack::isUnselected");
     
     return selected[i] == 0;
 }
@@ -278,7 +375,7 @@ bool knapsack::isDeselected(int i) const
 // Return true if object i is currently selected, and false otherwise.
 {
     if (i < 0 || i >= getNumObjects())
-        throw rangeError("Bad value in knapsack::getValue");
+        throw rangeError("Bad value in knapsack::isDeselected");
     
     return selected[i] == -1;
 }
@@ -310,12 +407,12 @@ void knapsack::orderByDensity ()
     }
 }
 
-int knapsack::bound()
+float knapsack::bound()
 // returns an upper bound on the value of objects by solving fractional knapsack
 {
 	// get constraints and value of the bag
 	int cost_remaining = costLimit;
-	int value_accumulated = 0;
+	float value_accumulated = 0;
 	int i = 0; // indexer
 	
 	// add all selected items to the bag
@@ -374,4 +471,88 @@ bool knapsack::fathomed(int championValue) // returns whether the knapsack is fa
     // 3. ?
     
     return (!isLegal() || (bound() < championValue));
+}
+
+void knapsack::toggle(int item) // toggles the selected state of the item
+{
+	if (item < 0 || item >= getNumObjects())
+		throw rangeError("Bad index in knapsack::toggle");
+	if (isSelected(item))
+		deSelect(item);
+	else if (isDeselected(item))
+		select(item);
+	return;
+}
+
+bool operator==(const knapsack &lhs, const knapsack &rhs)
+{
+	if ((lhs.numObjects == rhs.numObjects) && (lhs.value == rhs.value))
+	{
+		for (int i = 0; i < lhs.numObjects; i++)
+		{
+			if (lhs.selected[i] != rhs.selected[i])
+				return false;
+		}
+	}
+	return true;
+}
+
+bool operator<(const knapsack &lhs, const knapsack &rhs)
+{
+	return lhs.totalValue < rhs.totalValue;
+}
+
+bool operator>(const knapsack &lhs, const knapsack &rhs)
+{
+	return lhs.totalValue > rhs.totalValue;
+}
+
+knapsack crossover(const knapsack k, const knapsack l)
+{
+	// create a new knapsack
+	knapsack m = k;
+
+	// get a modulus value used for masking versus a random number
+	unsigned short int modval = 0;
+	unsigned short int randval = 0;
+	// for all items
+	for (int i = 0; i < k.numObjects; i++)
+	{
+		// if all bits used, get 16 new random bits and reset modulus
+		if ( modval == 0)
+		{
+			// get a random integer
+			boost::random::uniform_int_distribution<> dist(0, 65536 - 1);
+			randval = dist(gen);
+
+			// reset modulus bit
+			modval = 65536/2;
+		}
+
+		//  choose parent for the item
+		if (randval & modval)
+		{
+			if (k.isSelected(i))
+				m.select(i);
+			else if (k.isDeselected(i))
+				m.deSelect(i);
+			else if (k.isUnselected(i))
+				m.unSelect(i);
+		}
+		else
+		{
+			if (l.isSelected(i))
+				m.select(i);
+			else if (l.isDeselected(i))
+				m.deSelect(i);
+			else if (l.isUnselected(i))
+				m.unSelect(i);
+		}
+
+		// update modulus by shifting bit left by one
+		modval >>= 1;
+	}
+
+	return m;
+	
 }
