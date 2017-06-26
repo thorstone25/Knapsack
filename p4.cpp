@@ -34,12 +34,13 @@ knapsack geneticKnapsack(knapsack &k, const clock_t startTime, const int t_limit
 
 int main()
 {
+	/*
 	RunAlgorithm("knapsack8.input");
 	RunAlgorithm("knapsack12.input");
     RunAlgorithm("knapsack16.input");
     RunAlgorithm("knapsack20.input");
+	*/
     RunAlgorithm("knapsack28.input");
-	/*
 	RunAlgorithm("knapsack32.input");
     RunAlgorithm("knapsack48.input");
     RunAlgorithm("knapsack64.input");
@@ -47,8 +48,7 @@ int main()
     RunAlgorithm("knapsack256.input");
     RunAlgorithm("knapsack512.input");
 	RunAlgorithm("knapsack1024.input");
-    */
-	return 0;
+    return 0;
 
 }
 
@@ -57,7 +57,7 @@ int RunAlgorithm(string filenameext)
 {
 	ifstream fin;
 	stack <int> moves;
-	string filename;
+	string filename, savename;
 
 	// Read the name of the graph from the keyboard or
 	// hard code it here for testing.
@@ -66,6 +66,7 @@ int RunAlgorithm(string filenameext)
 	//cin >> filenameext;
 
 	filename = filenameext.substr(0, filenameext.find_last_of("."));
+	savename = "Genetic/" + filename;
 
 	fin.open(filenameext.c_str());
 	if (!fin)
@@ -76,32 +77,32 @@ int RunAlgorithm(string filenameext)
 
 	try
 	{
-		cout << "Reading knapsack instance: " << filenameext << endl;
+		std::cout << "Reading knapsack instance: " << filenameext << endl;
 		knapsack k(fin);
 
 		// get time reference for start
 		clock_t startTime = clock();
 
 		// run the algorithm
-		cout << "Optimizing . . ." << endl;
-		knapsack solution = geneticKnapsack(k, startTime, 15);
+		std::cout << "Optimizing . . ." << endl;
+		knapsack solution = geneticKnapsack(k, startTime, 300);
 
 		// report back to user
 		// solution.printSolution();
 		unsigned long diff = clock() - startTime;
 		float runTime = (float)diff / CLOCKS_PER_SEC;
-		cout << endl << "Genetic Algorithm Total Runtime: " << runTime << "s" << endl << endl << endl;
-		generateOutput(solution, filename, runTime);
+		std::cout << endl << "Genetic Algorithm Total Runtime: " << runTime << "s" << endl << endl << endl;
+		generateOutput(solution, savename, runTime);
 		return 0;
 	}
 
 	catch (indexRangeError &ex)
 	{
-		cout << ex.what() << endl; exit(1);
+		std::cout << ex.what() << endl; exit(1);
 	}
 	catch (rangeError &ex)
 	{
-		cout << ex.what() << endl; exit(1);
+		std::cout << ex.what() << endl; exit(1);
 	}
 
 }
@@ -110,23 +111,22 @@ knapsack geneticKnapsack(knapsack &k, const clock_t startTime, const int t_limit
 {
 	/* create a population of knapsacks */
 	vector<knapsack> population;
-	knapsack b = k; // champion knapsack
-	int pop_size = k.getNumObjects() / 4;
-	pop_size = (pop_size < 8) ? 8 : pop_size;
-	pop_size = (pop_size > 50) ? 50 : pop_size;
-	float threshold = k.getNumObjects() * 10;
-	int update_count = 0;
+	int pop_size = 10;
+	float threshold = k.getNumObjects() * 1000;
+	int update_count = 0, generation_count = 0;
 	bool updated = false;
 
 	// randomize each knapsack
-	for (int i = 0; i < pop_size; i++)
+	for (int i = 0; i < pop_size - 1; i++)
 		population.push_back(knapsack(k, 1));
+	population.push_back(greedyKnapsack(k, 0)); //add the greedy knapsack
 
 	// sort population by best knapsack
 	sort(population.begin(), population.end()); 
 	reverse(population.begin(), population.end()); // first element is the best
-	// 
-	while ((!timeExpired(t_limit, startTime)) && (k.isLegal()) && (update_count < threshold)) // until time expires or very near the bound
+	
+	// until time expires or very near the bound
+	while ((!timeExpired(t_limit, startTime)) && (k.isLegal()) && (update_count < threshold)) 
 	{
 		// cross every set of adjacent pairs of knapsacks
 		for (int i = 0; i < pop_size - 1; i++)
@@ -144,7 +144,7 @@ knapsack geneticKnapsack(knapsack &k, const clock_t startTime, const int t_limit
 		sort(population.begin(), population.end()); // sort the population
 		reverse(population.begin(), population.end()); // order with the best at the front
 
-		// then, remove the worst solutions until the population reaches the original size
+		// then, remove the worst solutions until the population reaches half the original size
 		if (population.size() > pop_size / 2)
 			population.erase(population.begin() + pop_size/2 - 1, population.begin() + population.size() - 1);
 
@@ -157,18 +157,27 @@ knapsack geneticKnapsack(knapsack &k, const clock_t startTime, const int t_limit
 		sort(population.begin(), population.end()); // sort the population
 		reverse(population.begin(), population.end()); // order with the best at the front
 
-
 		// update best knapsack so far
 		for (int i = 0; i < population.size(); i++)
-			updated |= updateChampion(k, population[i]);
+		{
+			updated = updated || updateChampion(k, population[i]);
+			if (updated)
+				break;
+		}
 		if (updated)
+		{
 			update_count = 0;
+			updated = false;
+		}
 		update_count++;
+		generation_count++;
+		std::cout << "update: " << update_count << "\t generation: " << generation_count << endl;
 	}
-	if ((update_count > threshold))
-		cout << "Population fully adapted with value " << k.getValue() << endl;
+	if ((update_count >= threshold))
+		std::cout << "Population fully adapted with value " << k.getValue() << endl;
 	else if (timeExpired(t_limit, startTime))
-		cout << "Time Expired!";
+		std::cout << "Time Expired!" << endl;
+	std::cout << generation_count << " generations simulated" << endl;
 	return k;
 }
 
@@ -391,7 +400,7 @@ void exhaustiveKnapsack(knapsack &k, int t)
     // permute over all possible knapsack combinations
     k = recursiveKnapsack(k, 0, startTime, t);
     unsigned long diff = clock()-startTime;
-    cout << endl << "Exhaustive Algorithm Total Runtime: " << (float) diff / CLOCKS_PER_SEC << "s" << endl;
+    std::cout << endl << "Exhaustive Algorithm Total Runtime: " << (float) diff / CLOCKS_PER_SEC << "s" << endl;
     
 }
 

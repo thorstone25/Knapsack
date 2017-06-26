@@ -1,6 +1,6 @@
 ------------------------------------------------
-Total value: 5639
-Total cost: 4039
+Total value: 9678
+Total cost: 7478
 
 0  101 1
 1  122 22
@@ -18,5 +18,11 @@ Total cost: 4039
 13  467 367
 14  507 407
 15  563 463
+16  586 486
+17  622 522
+18  654 554
+19  689 589
+20  713 613
+21  775 675
 
-Time to completion: 600.044 seconds.
+Time to completion: 300.02 seconds.
